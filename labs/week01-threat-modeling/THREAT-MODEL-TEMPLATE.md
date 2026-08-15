@@ -1,7 +1,7 @@
 # Threat Model — <app name>
-
+![alt text](image.png)
 ## 1. Data-flow diagram
-(Insert your DFD image. Mark trust boundaries with dashed lines.)
+![alt text](image-1.png)
 
 ## 2. Elements & trust boundaries
 | Element | Type (process/store/entity/flow) | Trust boundary crossed? |
