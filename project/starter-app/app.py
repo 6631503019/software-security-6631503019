@@ -125,9 +125,9 @@ def login():
     username = request.form.get("username") or (request.json or {}).get("username")
     password = request.form.get("password") or (request.json or {}).get("password")
     con = db()
-    q = "SELECT * FROM users WHERE username = '%s' AND password = '%s'" % (
-        username, hashlib.md5((password or "").encode()).hexdigest())
-    row = con.execute(q).fetchone()
+    password_hash = hashlib.md5((password or "").encode()).hexdigest()
+    q = "SELECT * FROM users WHERE username = ? AND password = ?"
+    row = con.execute(q, (username, password_hash)).fetchone()
     con.close()
     if not row:
         return "login failed", 401
@@ -135,7 +135,6 @@ def login():
     resp = make_response(redirect("/"))
     resp.set_cookie("session", tok)
     return resp
-
 
 @app.route("/logout")
 def logout():
