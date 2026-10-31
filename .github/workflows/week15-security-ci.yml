@@ -43,7 +43,7 @@ jobs:
     container:
       image: semgrep/semgrep:latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
       - name: Semgrep scan -> SARIF
         # Produce SARIF always; do NOT fail here so the SARIF can upload.
@@ -57,7 +57,7 @@ jobs:
 
       - name: Upload Semgrep SARIF
         if: always()              # upload even if a later step fails
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@5595ccaf912efad79be6eef63a5619ff05969be3
         with:
           sarif_file: semgrep.sarif
           category: semgrep
@@ -74,11 +74,11 @@ jobs:
     name: SCA + IaC (Trivy)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
       # --- Filesystem / dependency (SCA) scan -> SARIF (report, no fail) ---
       - name: Trivy fs (SCA) -> SARIF
-        uses: aquasecurity/trivy-action@0.26.0
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
         with:
           scan-type: fs
           scanners: vuln,secret
@@ -89,14 +89,14 @@ jobs:
 
       - name: Upload Trivy fs SARIF
         if: always()
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@5595ccaf912efad79be6eef63a5619ff05969be3
         with:
           sarif_file: trivy-fs.sarif
           category: trivy-fs
 
       # --- IaC / Dockerfile misconfiguration scan -> SARIF ---
       - name: Trivy config (IaC) -> SARIF
-        uses: aquasecurity/trivy-action@0.26.0
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
         with:
           scan-type: config
           format: sarif
@@ -106,14 +106,14 @@ jobs:
 
       - name: Upload Trivy config SARIF
         if: always()
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@5595ccaf912efad79be6eef63a5619ff05969be3
         with:
           sarif_file: trivy-config.sarif
           category: trivy-config
 
       # --- GATE: re-scan with exit-code 1 so HIGH/CRITICAL FAILS the build ---
       - name: Gate — fail on HIGH/CRITICAL (SCA)
-        uses: aquasecurity/trivy-action@0.26.0
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
         with:
           scan-type: fs
           scanners: vuln,secret
@@ -122,7 +122,7 @@ jobs:
           exit-code: "1"          # <-- real failure semantics, not `|| true`
 
       - name: Gate — fail on HIGH/CRITICAL (IaC)
-        uses: aquasecurity/trivy-action@0.26.0
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
         with:
           scan-type: config
           severity: HIGH,CRITICAL
@@ -132,7 +132,7 @@ jobs:
       # - name: Build image
       #   run: docker build -t app:ci .
       # - name: Gate — fail on image CVEs
-      #   uses: aquasecurity/trivy-action@0.26.0
+      #   uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
       #   with:
       #     scan-type: image
       #     image-ref: app:ci
@@ -146,25 +146,26 @@ jobs:
     name: Secrets (Gitleaks)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           fetch-depth: 0          # full history so history-buried secrets are caught
 
       - name: Gitleaks scan -> SARIF
         run: |
-          docker run --rm -v "$PWD:/repo" zricethezav/gitleaks:latest \
-            detect -s /repo \
+           docker run --rm -v "$PWD:/repo" -w /repo zricethezav/gitleaks:latest \
+            detect --config /repo/.gitleaks.toml -s /repo \
             --report-format sarif --report-path /repo/gitleaks.sarif \
-            --exit-code 0 -v || true   # report; gate step enforces failure
+            --exit-code 0 -v || true
 
       - name: Upload Gitleaks SARIF
         if: always()
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@5595ccaf912efad79be6eef63a5619ff05969be3
         with:
           sarif_file: gitleaks.sarif
           category: gitleaks
 
       - name: Gate — fail if any secret found
         run: |
-          docker run --rm -v "$PWD:/repo" zricethezav/gitleaks:latest \
-            detect -s /repo --exit-code 1 -v   # <-- non-zero => build fails
+          docker run --rm -v "$PWD:/repo" -w /repo zricethezav/gitleaks:latest \
+            detect --config /repo/.gitleaks.toml -s /repo \
+            --exit-code 1 -v

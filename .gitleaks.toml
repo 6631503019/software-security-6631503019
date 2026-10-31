@@ -13,15 +13,23 @@
 [extend]
 useDefault = true
 
-[allowlist]
+# Existing allowlist: preserve the original teaching-example paths.
+[[allowlists]]
 description = "Intentionally planted teaching secrets (students scan these on purpose)"
 paths = [
   '''labs/week02-sdlc-tooling/vulnerable-repo/.*''',
   '''labs/week13-cloud-container/Dockerfile\.insecure''',
   '''labs/week15-devsecops-pipeline/.*''',
-  # Week 2's slide deck quotes this exact planted key inline, to show the
-  # contrast with the well-known AWS-docs example key that gitleaks won't
-  # fire on — same secret as the vulnerable-repo path above, just quoted a
-  # second time as a teaching illustration.
   '''slides/week02\.md''',
+]
+
+# Allow only the intentional alice-token example in this file.
+[[allowlists]]
+description = "Allow the intentional alice-token example in Week 15 lesson plan only"
+condition = "AND"
+paths = [
+  '''docs/lesson-plans/week15-devsecops-pipeline\.md$'''
+]
+regexes = [
+  '''^alice-token$'''
 ]
