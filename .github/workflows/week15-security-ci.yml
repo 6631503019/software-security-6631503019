@@ -78,7 +78,7 @@ jobs:
 
       # --- Filesystem / dependency (SCA) scan -> SARIF (report, no fail) ---
       - name: Trivy fs (SCA) -> SARIF
-        uses: aquasecurity/trivy-action@0.24.0
+        uses: aquasecurity/trivy-action@0.26.0
         with:
           scan-type: fs
           scanners: vuln,secret
@@ -96,7 +96,7 @@ jobs:
 
       # --- IaC / Dockerfile misconfiguration scan -> SARIF ---
       - name: Trivy config (IaC) -> SARIF
-        uses: aquasecurity/trivy-action@0.24.0
+        uses: aquasecurity/trivy-action@0.26.0
         with:
           scan-type: config
           format: sarif
@@ -113,7 +113,7 @@ jobs:
 
       # --- GATE: re-scan with exit-code 1 so HIGH/CRITICAL FAILS the build ---
       - name: Gate — fail on HIGH/CRITICAL (SCA)
-        uses: aquasecurity/trivy-action@0.24.0
+        uses: aquasecurity/trivy-action@0.26.0
         with:
           scan-type: fs
           scanners: vuln,secret
@@ -122,7 +122,7 @@ jobs:
           exit-code: "1"          # <-- real failure semantics, not `|| true`
 
       - name: Gate — fail on HIGH/CRITICAL (IaC)
-        uses: aquasecurity/trivy-action@0.24.0
+        uses: aquasecurity/trivy-action@0.26.0
         with:
           scan-type: config
           severity: HIGH,CRITICAL
@@ -132,7 +132,7 @@ jobs:
       # - name: Build image
       #   run: docker build -t app:ci .
       # - name: Gate — fail on image CVEs
-      #   uses: aquasecurity/trivy-action@0.24.0
+      #   uses: aquasecurity/trivy-action@0.26.0
       #   with:
       #     scan-type: image
       #     image-ref: app:ci
