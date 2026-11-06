@@ -8,6 +8,7 @@ from functools import wraps
 
 import jwt
 from flask import Flask, abort, jsonify, make_response, redirect, render_template_string, request
+from werkzeug.security import check_password_hash, generate_password_hash
 
 app = Flask(__name__)
 DB = os.environ.get("NOTEvault_DB", "/tmp/notevault.db")
@@ -55,8 +56,8 @@ def seed():
         "CREATE TABLE notes (id INTEGER PRIMARY KEY, owner TEXT NOT NULL, title TEXT NOT NULL, body TEXT NOT NULL);"
     )
     con.executemany("INSERT INTO users (username, password, role) VALUES (?,?,?)", [
-        ("alice", hashlib.sha256(b"alicepw").hexdigest(), "user"),
-        ("admin", hashlib.sha256(b"admin123").hexdigest(), "admin"),
+        ("alice", generate_password_hash("alicepw"), "user"),
+        ("admin", generate_password_hash("admin123"), "admin"),
     ])
     con.executemany("INSERT INTO notes (owner, title, body) VALUES (?,?,?)", [
         ("alice", "groceries", "milk, eggs"),
@@ -154,7 +155,7 @@ def register():
     con = db()
     try:
         con.execute("INSERT INTO users (username, password, role) VALUES (?,?,?)", (
-            username, hashlib.sha256(password.encode()).hexdigest(), "user"
+            username, generate_password_hash(password), "user"
         ))
         con.commit()
     except sqlite3.IntegrityError:
@@ -170,12 +171,9 @@ def login():
     username = request_value("username")
     password = request_value("password") or ""
     con = db()
-    row = con.execute(
-        "SELECT * FROM users WHERE username = ? AND password = ?",
-        (username, hashlib.sha256(password.encode()).hexdigest()),
-    ).fetchone()
+    row = con.execute("SELECT * FROM users WHERE username = ?", (username,)).fetchone()
     con.close()
-    if not row:
+    if not row or not check_password_hash(row["password"], password):
         return "login failed", 401
     csrf = secrets.token_urlsafe(32)
     token = jwt.encode({"sub": username, "csrf": csrf}, SECRET, algorithm="HS256")

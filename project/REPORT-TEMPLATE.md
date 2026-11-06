@@ -22,7 +22,7 @@ injection, XSS, broken object-level authorization, role escalation, command
 injection, password-hash disclosure, weak password storage, insecure session
 configuration, CSRF exposure, and vulnerable dependency/container defaults. The
 remediated build uses parameterized SQL, Jinja autoescaping, ownership checks,
-server-assigned roles, SHA-256 compatibility hashes for the seeded demo data,
+server-assigned roles, Werkzeug's password KDF for the seeded demo data,
 CSRF tokens, strict JWT algorithms, protected cookies, allow-listed export formats,
 non-root Docker, runtime secrets, and current dependency pins.
 
@@ -191,7 +191,7 @@ reproduction. Line numbers refer to the baseline commit `99cdb1c`.
 F-01/F-02 use bound SQL parameters; F-03 uses Jinja autoescaping; F-04 adds
 `owner = ?`; F-05 ignores submitted roles; F-06 removes shell execution and
 allow-lists `txt`/`json`; F-07 removes password fields from admin output and uses
-SHA-256 for the starter's compatibility data; F-08 requires CSRF, strict HS256,
+Werkzeug's password KDF for the starter's compatibility data; F-08 requires CSRF, strict HS256,
 HttpOnly/SameSite cookies, POST logout, and runtime `APP_SECRET`; F-09 upgrades
 dependencies, generates an SBOM, uses a non-root slim image, and adds CI gates.
 
@@ -226,8 +226,8 @@ not been run in this local session, so no CI pass/fail claim or screenshot is ma
 ## 8. Conclusion & Reflection
 
 The fixed local build materially reduces injection, authorization, XSS, session,
-and supply-chain risk. Residual risks include no production-grade password KDF
-for migrated accounts, ephemeral SQLite storage, lack of rate limiting, no
+and supply-chain risk. Residual risks include no password migration path for
+accounts outside this starter database, ephemeral SQLite storage, lack of rate limiting, no
 centralized audit logging, and manual registry/OIDC release setup. Next hardening
 would add Argon2id migration, rate limiting, encrypted persistent storage, and
 independent image vulnerability scanning.
