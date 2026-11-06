@@ -1,0 +1,44 @@
+name: NoteVault security
+
+on:
+  push:
+    paths:
+      - "project/starter-app/**"
+      - ".github/workflows/security.yml"
+  pull_request:
+    paths:
+      - "project/starter-app/**"
+      - ".github/workflows/security.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  security:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: project/starter-app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install and test
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt pytest pip-audit
+          pytest -q
+      - name: SCA gate
+        run: pip-audit --strict
+      - name: SAST gate
+        uses: semgrep/semgrep-action@v1
+        with:
+          config: >-
+            p/python
+            p/flask
+          auditOn: push
+      - name: Secret scanning gate
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
