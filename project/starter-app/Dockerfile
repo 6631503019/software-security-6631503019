@@ -1,12 +1,16 @@
-# NoteVault image. Part of the project is to harden this Dockerfile
-# (base pinning, non-root user, no baked secrets, minimal layers).
-FROM python:3.12
+# NoteVault runtime image. Secrets are supplied at runtime.
+FROM python:3.12.8-slim-bookworm
 
-ENV APP_SECRET=notevault-dev-secret
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
 
 WORKDIR /app
 COPY . .
-RUN pip install -r requirements.txt
+RUN pip install --no-cache-dir --requirement requirements.txt
+
+RUN addgroup --system app && adduser --system --ingroup app app \
+    && chown -R app:app /app
+USER app
 
 EXPOSE 8080
 CMD ["python", "app.py"]
