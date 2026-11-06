@@ -32,7 +32,7 @@ def login(client, username="alice", password="alicepw"):
 def test_login_rejects_sql_injection(client):
     _, token = csrf(client)
     response = client.post("/login", data={
-        "username": "' OR '1'='1", "password": "nope", "csrf_token": token
+        "username": "admin' --", "password": "nope", "csrf_token": token
     })
     assert response.status_code == 401
 
@@ -47,6 +47,7 @@ def test_search_is_parameterized_and_escaped(client):
     assert response.status_code == 302
     response = client.get("/search?q=%27%20OR%201%3D1%20--")
     assert response.status_code == 200
+    assert b"hunter2" not in response.data
     assert b"<script>" not in response.data
     assert b"&lt;script&gt;" in client.get("/").data
 

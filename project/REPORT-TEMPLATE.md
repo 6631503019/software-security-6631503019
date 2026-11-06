@@ -85,7 +85,7 @@ reproduction. Line numbers refer to the baseline commit `99cdb1c`.
 | OWASP 2025 | A05 Injection |
 | Severity | High |
 | Location | `app.py` baseline login query |
-| Reproduction | POST `/login` with `username=' OR '1'='1` and an invalid password. |
+| Reproduction | POST `/login` with `username=admin' --` and an invalid password. |
 | Impact | Authentication bypass/data access in the vulnerable build. |
 | Evidence | Baseline query interpolated username into SQL; regression now returns 401. |
 | Root cause | String formatting instead of bound parameters. |
