@@ -3,7 +3,7 @@
 | Field | Value |
 |---|---|
 | Team name | TSC |
-| Members (name + ID) | TEAM_ID TSC; add member names before submission |
+| Members Thiwakorn Boayairuksa 6631503019 | TEAM_ID TSC;|
 | Target application | `project/starter-app` |
 | Repository URL | Local course repository |
 | Date | 2026-11-06 |
@@ -194,6 +194,130 @@ allow-lists `txt`/`json`; F-07 removes password fields from admin output and use
 Werkzeug's password KDF for the starter's compatibility data; F-08 requires CSRF, strict HS256,
 HttpOnly/SameSite cookies, POST logout, and runtime `APP_SECRET`; F-09 upgrades
 dependencies, generates an SBOM, uses a non-root slim image, and adds CI gates.
+
+### Before / After Fix
+
+The following comparisons show the vulnerable baseline from commit `99cdb1c` and
+the corresponding remediation in the current build.
+
+#### F-01/F-02 — SQL injection
+
+```diff
+- q = "SELECT * FROM users WHERE username = '%s' AND password = '%s'" % (
+-     username, hashlib.md5((password or "").encode()).hexdigest())
+- row = con.execute(q).fetchone()
++ row = con.execute("SELECT * FROM users WHERE username = ?", (username,)).fetchone()
++ if not row or not check_password_hash(row["password"], password):
++     return "login failed", 401
+```
+
+```diff
+- q = "SELECT id,title,body FROM notes WHERE owner='%s' AND body LIKE '%%%s%%'" % (user, term)
+- rows = con.execute(q).fetchall()
++ rows = con.execute(
++     "SELECT id,title,body FROM notes WHERE owner = ? AND body LIKE ?",
++     (user, "%" + term + "%"),
++ ).fetchall()
+```
+
+#### F-03 — XSS
+
+```diff
+- <h3>Your notes</h3>{{ notes_html|safe }}
+- notes_html = "".join("<li>...%s...</li>" % r["body"] for r in rows)
++ <h3>Your notes</h3><ul>{% for row in notes %}
++ <li>#{{ row['id'] }} <b>{{ row['title'] }}</b>: {{ row['body'] }}</li>
++ {% endfor %}</ul>
+```
+
+Jinja now escapes note content instead of inserting attacker-controlled HTML.
+
+#### F-04 — IDOR / broken object authorization
+
+```diff
+- SELECT id,owner,title,body FROM notes WHERE id = ?
++ SELECT id,owner,title,body FROM notes WHERE id = ? AND owner = ?
+```
+
+The API now returns `404` for another user's note rather than disclosing it.
+
+#### F-05 — Privilege escalation
+
+```diff
+- role = request.form.get("role") or ... or "user"
+- INSERT INTO users (..., role) VALUES (..., role)
++ INSERT INTO users (username, password, role) VALUES (?,?,?)
++ (username, generate_password_hash(password), "user")
+```
+
+The server ignores a submitted `role=admin`; only the server assigns roles.
+
+#### F-06 — Command injection
+
+```diff
+- subprocess.run("echo exporting notes as " + fmt, shell=True, ...)
++ if fmt not in {"txt", "json"}:
++     return "unsupported format", 400
++ rows = con.execute(
++     "SELECT id,title,body FROM notes WHERE owner = ?", (current_user(),)
++ ).fetchall()
+```
+
+The shell call was removed entirely and export output is limited to the
+authenticated user's notes and two allow-listed formats.
+
+#### F-07 — Password disclosure and weak hashing
+
+```diff
+- SELECT id,username,password,role FROM users
++ SELECT id,username,role FROM users
+```
+
+```diff
+- hashlib.md5(password.encode()).hexdigest()
++ generate_password_hash(password)
+...
+- password = hashlib.md5(...).hexdigest()
++ check_password_hash(row["password"], password)
+```
+
+Password hashes are no longer returned by `/admin`, and passwords use Werkzeug's
+salted password KDF rather than MD5.
+
+#### F-08 — Session, CSRF, and secret handling
+
+```diff
+- jwt.decode(tok, SECRET, algorithms=["HS256", "none"])
+- resp.set_cookie("session", tok)
++ jwt.decode(token, SECRET, algorithms=["HS256"])
++ response.set_cookie("session", token, httponly=True, samesite="Lax")
+```
+
+```diff
+- @app.route("/logout")
++ @app.route("/logout", methods=["POST"])
++ @authenticated
++ def logout():
++     require_csrf()
+```
+
+`APP_SECRET` is now supplied at runtime; it is not baked into the image. All
+state-changing routes require a CSRF token bound to the session.
+
+#### F-09 — Dependencies and container
+
+```diff
+- FROM python:3.12
+- ENV APP_SECRET=notevault-dev-secret
+- RUN pip install -r requirements.txt
++ FROM python:3.12.8-slim-bookworm
++ RUN pip install --no-cache-dir --requirement requirements.txt
++ RUN addgroup --system app && adduser --system --ingroup app app
++ USER app
+```
+
+Dependency pins were upgraded and validated with `pip-audit`; the final result was
+`No known vulnerabilities found`. The final image runs as UID 100 (`app`).
 
 Regression proof is `7 passed` in `test_app.py`. Separate finding commits should be
 created from the coherent changes below before submission if the instructor
