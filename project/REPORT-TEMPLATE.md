@@ -31,6 +31,7 @@ container `GET /` returned HTTP 200; `pip-audit -r requirements.txt` reported
 **No known vulnerabilities found**. Cosign and GitHub provenance are configured but
 not claimed as completed locally because no registry, signing identity, or GitHub
 Actions run was available.
+![alt text](image.png)
 
 ## 2. System Scope & Function
 
@@ -89,6 +90,7 @@ reproduction. Line numbers refer to the baseline commit `99cdb1c`.
 | Impact | Authentication bypass/data access in the vulnerable build. |
 | Evidence | Baseline query interpolated username into SQL; regression now returns 401. |
 | Root cause | String formatting instead of bound parameters. |
+![alt text](image-1.png)
 
 ### Finding F-02 — SQL injection in search
 
@@ -101,7 +103,7 @@ reproduction. Line numbers refer to the baseline commit `99cdb1c`.
 | Reproduction | Authenticated request `/search?q=' OR 1=1 --`. |
 | Impact | Cross-user note disclosure and query manipulation. |
 | Root cause | User and search term were concatenated into SQL. |
-
+![alt text](image-2.png)
 ### Finding F-03 — Stored/reflected XSS
 
 | Field | Value |
@@ -113,7 +115,7 @@ reproduction. Line numbers refer to the baseline commit `99cdb1c`.
 | Reproduction | Add `<img src=x onerror=alert(1)>` as a note body. |
 | Impact | Script execution in another user's browser and session actions. |
 | Root cause | Raw HTML construction and `|safe`; search had unescaped interpolation. |
-
+![alt text](image-3.png)
 ### Finding F-04 — Broken object-level authorization (IDOR)
 
 | Field | Value |
@@ -125,7 +127,7 @@ reproduction. Line numbers refer to the baseline commit `99cdb1c`.
 | Reproduction | Authenticate as `alice`; GET `/api/notes/2`. |
 | Impact | Read another user's note, including the seeded admin note. |
 | Root cause | Query checked only note ID, not owner. |
-
+![alt text](image-4.png)
 ### Finding F-05 — Self-service role escalation
 
 | Field | Value |
@@ -137,7 +139,7 @@ reproduction. Line numbers refer to the baseline commit `99cdb1c`.
 | Reproduction | POST registration with `role=admin`. |
 | Impact | New account gains admin access to all users. |
 | Root cause | Client-controlled role was inserted into the database. |
-
+![alt text](image-5.png)
 ### Finding F-06 — Command injection in export
 
 | Field | Value |
@@ -149,7 +151,7 @@ reproduction. Line numbers refer to the baseline commit `99cdb1c`.
 | Reproduction | Authenticated request `fmt=txt;cat /etc/passwd`. |
 | Impact | OS command execution as the container process. |
 | Root cause | `shell=True` with concatenated user input. |
-
+![alt text](image-6.png)
 ### Finding F-07 — Password hash disclosure and weak authentication storage
 
 | Field | Value |
@@ -161,7 +163,8 @@ reproduction. Line numbers refer to the baseline commit `99cdb1c`.
 | Reproduction | Authenticate as admin and GET `/admin`. |
 | Impact | Hash cracking and account takeover; admin endpoint exposed hashes. |
 | Root cause | MD5 storage and returning the password column. |
-
+![alt text](image-7.png)
+![alt text](image-8.png)
 ### Finding F-08 — Insecure session, CSRF, and baked secret defaults
 
 | Field | Value |
@@ -173,7 +176,8 @@ reproduction. Line numbers refer to the baseline commit `99cdb1c`.
 | Reproduction | Observe `algorithms=["HS256", "none"]`, non-HttpOnly cookie, state-changing GET logout, and `APP_SECRET` in image. |
 | Impact | Token confusion/forgery risk, CSRF state changes, secret exposure. |
 | Root cause | Unsafe algorithm allow-list, cookie defaults, no CSRF control, baked secret. |
-
+![alt text](image-9.png)
+![alt text](image-10.png)
 ### Finding F-09 — Vulnerable dependencies and root container
 
 | Field | Value |
@@ -185,7 +189,7 @@ reproduction. Line numbers refer to the baseline commit `99cdb1c`.
 | Reproduction | `pip-audit` against baseline pins and inspect Dockerfile. |
 | Impact | Known dependency vulnerabilities and unnecessary container privilege. |
 | Root cause | Old pins, unpinned base, root user, and secret in image. |
-
+![alt text](image-11.png)
 ## 5. Remediation
 
 F-01/F-02 use bound SQL parameters; F-03 uses Jinja autoescaping; F-04 adds
