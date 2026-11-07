@@ -20,8 +20,8 @@ jobs:
       run:
         working-directory: project/starter-app
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: "3.12"
       - name: Install and test
@@ -32,13 +32,13 @@ jobs:
       - name: SCA gate
         run: pip-audit --strict
       - name: SAST gate
-        uses: semgrep/semgrep-action@v1
+        uses: semgrep/semgrep-action@713efdd345f3035192eaa63f56867b88e63e4e5d # v1
         with:
           config: >-
             p/python
             p/flask
           auditOn: push
       - name: Secret scanning gate
-        uses: gitleaks/gitleaks-action@v2
+        uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
