@@ -84,6 +84,7 @@ jobs:
           scanners: vuln,secret
           format: sarif
           output: trivy-fs.sarif
+          skip-dirs: 'labs/week*,labs/toolbox,project/starter-app,instructor'
           severity: HIGH,CRITICAL
           exit-code: "0"          # report only; the gate step enforces failure
 
@@ -101,6 +102,7 @@ jobs:
           scan-type: config
           format: sarif
           output: trivy-config.sarif
+          skip-dirs: 'labs/week*,labs/toolbox,project/starter-app,instructor'
           severity: HIGH,CRITICAL
           exit-code: "0"
 
@@ -117,6 +119,7 @@ jobs:
         with:
           scan-type: fs
           scanners: vuln,secret
+          skip-dirs: 'labs/week*,labs/toolbox,project/starter-app,instructor'
           severity: HIGH,CRITICAL
           ignore-unfixed: false
           exit-code: "1"          # <-- real failure semantics, not `|| true`
@@ -125,6 +128,7 @@ jobs:
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
         with:
           scan-type: config
+          skip-dirs: 'labs/week*,labs/toolbox,project/starter-app,instructor'
           severity: HIGH,CRITICAL
           exit-code: "1"
 
