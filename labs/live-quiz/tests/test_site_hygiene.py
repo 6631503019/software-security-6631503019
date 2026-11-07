@@ -579,12 +579,19 @@ def _authored_item_numbers(text):
     """The number on every line the renderer will treat as an ordered item,
     read the same way it reads them: its own pattern, fenced code skipped."""
     nums, fenced = [], False
-    for line in text.splitlines():
+    lines = text.splitlines()
+    for i, line in enumerate(lines):
         if re.match(r"^\s*```+", line):
             fenced = not fenced
             continue
         if fenced or C._ULI.match(line):
             continue
+
+        # The renderer recognizes a table before it recognizes an ordered list.
+        # Do not count a numbered-looking table header as a list item.
+        if i + 1 < len(lines) and C._TABLE_SEP.match(lines[i + 1]):
+            continue
+
         if C._OLI.match(line):
             nums.append(int(re.match(r"^\s*(\d+)", line).group(1)))
     return nums

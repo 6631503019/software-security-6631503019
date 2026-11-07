@@ -396,7 +396,14 @@ def test_every_student_facing_markdown_in_a_lab_is_reachable():
     for w in C.list_weeks():
         d = os.path.join(C.CONTENT_ROOT, w["slug"])
         for f in glob.glob(os.path.join(d, "*.md")):
-            if os.path.basename(f) not in C.PUBLIC_FILES.values():
+            name = os.path.basename(f)
+
+            # Personal student submissions are intentionally not served.
+            # They use the student's ID as a filename suffix, unlike lab material.
+            if name.endswith(("-6631503019.md", "_6631503019.md")):
+                continue
+
+            if name not in C.PUBLIC_FILES.values():
                 unreachable.append(os.path.relpath(f, C.CONTENT_ROOT))
     assert not unreachable, (
         "student-facing markdown not in PUBLIC_FILES (add it, or confirm it is "

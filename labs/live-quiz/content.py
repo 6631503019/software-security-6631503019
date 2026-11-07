@@ -1351,8 +1351,15 @@ def render(md: str, title: str | None = None, ctx: dict | None = None) -> str:
                     out.append(f'<ol start="{ol_items + 1}">')
                 else:
                     if want == "ol":
-                        ol_items = 0
-                    out.append(f"<{want}>")
+                        # Preserve an explicitly authored starting number.
+                        # ol_items tracks the last displayed number, not item count.
+                        ol_items = wrote - 1
+                        if wrote > 1:
+                            out.append(f'<ol start="{wrote}">')
+                        else:
+                            out.append("<ol>")
+                    else:
+                        out.append("<ul>")
                 # A <ul> nested under an ordered step (the "capture all of:"
                 # bullets in week 14) must not clear the outer count — only an
                 # <ol> actually re-opening does.
